@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>엑셀 실무 퀘스트</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* 블로그 대표이미지 틀을 그대로: 연민트 바탕 + 큰 원 두 개(민트, 라벤더), 남색 굵은 제목 + 초록 강조, 흰 둥근 카드, 알약 배지와 체크 칩.
+   한 화면 구성: 표지(제목 + 내 직급 카드) → 레벨 지도 → 지금 레벨 카드. 한 가지 테마로 고정. */
+:root{
+  color-scheme:light;
+  --bg:#ecf7f1; --blob-mint:#d2efe2; --blob-lav:#e0d9f7; --surface:#ffffff;
+  --ink:#29264f; --muted:#5d5a7c; --line:#dcebe4;
+  --accent:#2fa37a; --accent-deep:#1f7d5c; --accent-soft:#e1f4ec;
+  --lav:#7a68c8; --lav-soft:#efebfb;
+  --warn:#c2571d; --warn-soft:#fdeee4;
+  --font:"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+  --shadow:0 10px 30px rgba(41,38,79,.07);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.65;position:relative;overflow-x:hidden}
+body::before,body::after{content:"";position:absolute;border-radius:50%;z-index:0;pointer-events:none}
+body::before{width:520px;height:520px;right:-190px;top:-200px;background:var(--blob-mint)}
+body::after{width:420px;height:420px;left:-210px;top:560px;background:var(--blob-lav)}
+.wrap{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:36px 16px 64px;display:flex;flex-direction:column;gap:22px}
+header{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:end}
+.tag{display:inline-block;font-size:.95rem;font-weight:700;color:#fff;background:var(--accent);border-radius:999px;padding:6px 16px;margin-bottom:14px}
+header h1{font-weight:900;font-size:clamp(2.1rem,6.2vw,3.3rem);line-height:1.12;letter-spacing:-.02em;margin:0 0 10px;text-wrap:balance}
+header h1 span{display:block;color:var(--accent)}
+header p{margin:0;color:var(--muted);max-width:44ch;font-size:1.02rem}
+.rank{background:var(--surface);border-radius:22px;box-shadow:var(--shadow);padding:18px 20px;min-width:230px;display:flex;flex-direction:column;gap:8px}
+.rank small{font-size:.78rem;font-weight:700;color:var(--lav);letter-spacing:.04em}
+.rank strong{font-size:1.25rem;font-weight:900;line-height:1.25}
+.bar{height:10px;border-radius:999px;background:var(--accent-soft);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:999px;background:var(--accent);transition:width .5s ease}
+.rank span{font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+nav{background:var(--surface);border-radius:22px;box-shadow:var(--shadow);padding:18px 14px 14px;display:flex;flex-direction:column;gap:12px}
+.mapscroll{overflow-x:auto;padding-bottom:4px}
+.steps{display:flex;list-style:none;margin:0;padding:0;min-width:640px}
+.steps li{flex:1;position:relative;display:flex;justify-content:center}
+.steps li+li::before{content:"";position:absolute;top:21px;right:50%;width:100%;height:4px;background:var(--line);z-index:0}
+.steps li.reached+li::before{background:var(--accent)}
+.steps button{position:relative;z-index:1;font:inherit;background:none;border:0;padding:0 2px;cursor:pointer;color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:6px;border-radius:12px}
+.steps .dot{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:.95rem;background:var(--surface);border:4px solid var(--line);color:var(--muted)}
+.steps .lbl{font-size:.8rem;font-weight:700;white-space:nowrap}
+.steps button.done .dot{background:var(--accent);border-color:var(--accent);color:#fff}
+.steps button.open .dot{border-color:var(--accent);color:var(--accent-deep)}
+.steps button.current .dot{box-shadow:0 0 0 5px var(--accent-soft)}
+.steps button.current .lbl{color:var(--accent-deep)}
+.steps button[disabled]{cursor:not-allowed}
+.steps button[disabled] .dot{border-style:dashed}
+.steps button[disabled] .lbl{color:var(--muted);font-weight:500}
+.soon{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.8rem;color:var(--muted);padding:0 6px}
+.soon b{font-weight:700;color:var(--lav)}
+.soon span{background:var(--lav-soft);color:var(--lav);border-radius:999px;padding:2px 10px;font-weight:500}
+button:focus-visible,input:focus-visible,a:focus-visible,.scroll:focus-visible{outline:3px solid var(--lav);outline-offset:2px}
+.card{background:var(--surface);border-radius:26px;box-shadow:var(--shadow);padding:30px;display:flex;flex-direction:column;gap:22px}
+.card h2{font-weight:900;font-size:1.7rem;line-height:1.25;letter-spacing:-.01em;margin:0;text-wrap:balance}
+.card h2 em{font-style:normal;color:var(--accent)}
+.card h3{font-size:.9rem;font-weight:700;color:var(--accent-deep);margin:0 0 8px}
+.memo{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
+.memo .face{width:46px;height:46px;border-radius:50%;background:var(--lav-soft);color:var(--lav);display:grid;place-items:center;font-weight:900;font-size:.85rem}
+.memo .bubble{background:var(--lav-soft);border-radius:4px 20px 20px 20px;padding:12px 18px}
+.memo .who{font-size:.8rem;font-weight:700;color:var(--lav)}
+.memo p{margin:2px 0 0;max-width:60ch}
+.task{background:var(--bg);border-radius:18px;padding:16px 20px}
+.task p{margin:0;max-width:65ch;font-weight:500}
+.paste{margin:-12px 0 0;max-width:65ch}
+.task .note{color:var(--muted);font-size:.9rem;font-weight:400;margin-top:6px}
+.data{display:flex;flex-direction:column;gap:16px}
+.tablehead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px}
+.tablehead strong{font-size:.98rem;font-weight:700}
+.tablehead span{color:var(--muted);font-size:.8rem;font-weight:400}
+.copy{font:inherit;font-size:.85rem;font-weight:700;border:2px solid var(--accent);color:var(--accent-deep);background:var(--surface);border-radius:999px;padding:5px 16px;cursor:pointer}
+.copy:hover{background:var(--accent-soft)}
+.copy[disabled]{border-color:var(--line);color:var(--muted);cursor:default}
+.scroll{overflow:auto;max-height:340px;border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;font-size:.88rem;font-variant-numeric:tabular-nums;background:var(--surface)}
+th,td{padding:7px 12px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);text-align:left;white-space:nowrap}
+th{position:sticky;top:0;background:var(--accent);color:#fff;font-weight:700}
+tbody tr:nth-child(even) td{background:#f6fbf8}
+td.num,th.num{text-align:right}
+.copymsg{font-size:.85rem;color:var(--accent-deep);min-height:1.4em;margin:4px 0 0}
+form{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;background:var(--accent-soft);border-radius:20px;padding:18px 20px}
+form label{display:flex;flex-direction:column;gap:6px;font-size:.9rem;font-weight:700;color:var(--accent-deep);flex:1 1 240px}
+form input{font:inherit;font-size:1.2rem;font-weight:700;font-variant-numeric:tabular-nums;padding:10px 16px;border:2px solid transparent;border-radius:14px;background:var(--surface);color:var(--ink);width:100%}
+form input:focus{border-color:var(--accent);outline:none}
+.primary{font:inherit;font-weight:700;background:var(--ink);color:#fff;border:0;border-radius:999px;padding:13px 24px;cursor:pointer}
+.primary:hover{background:var(--accent-deep)}
+.hintbtn{padding:11px 18px}
+.hints{background:var(--lav-soft);border-radius:18px;padding:14px 18px;display:flex;flex-direction:column;gap:8px}
+.hints p{margin:0;max-width:65ch}
+.hints b{display:inline-block;background:var(--lav);color:#fff;border-radius:999px;font-size:.75rem;padding:1px 10px;margin-right:6px}
+.hints a{color:var(--lav);font-weight:700}
+.result{border-radius:20px;padding:18px 20px;display:flex;flex-direction:column;gap:8px;position:relative}
+.result.ok{background:var(--accent-soft)}
+.result.no{background:var(--warn-soft)}
+.result .head{font-weight:900;font-size:1.15rem}
+.result.ok .head{color:var(--accent-deep)}
+.result.no .head{color:var(--warn);font-size:1rem}
+.result p{margin:0;max-width:65ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips span{background:var(--surface);color:var(--accent-deep);font-weight:700;font-size:.85rem;border-radius:999px;padding:4px 14px}
+.next{align-self:flex-start;margin-top:4px}
+.sheet{background:var(--surface);color:var(--ink);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.sheet h4{margin:0;font-size:.9rem;font-weight:700}
+.sheet .scroll{max-height:345px;border-radius:8px}
+.sheet th,.sheet td{padding:6px 10px}
+.sheet th.rc,.sheet td.rc{background:#eef1f0;color:var(--muted);text-align:center;font-weight:500;position:sticky;left:0}
+.sheet thead th{background:#eef1f0;color:var(--muted);text-align:center;font-weight:500}
+.sheet tbody tr td{background:var(--surface)}
+.sheet tr.hd td{font-weight:700;background:var(--accent-soft);color:var(--accent-deep)}
+.sheet td.hl{background:var(--warn-soft);color:var(--warn);font-weight:700}
+.sheet td.ans{outline:3px solid var(--accent);outline-offset:-3px;font-weight:900}
+.fx{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.85rem;margin:0}
+.fx dt{font-weight:700;color:var(--accent-deep)}
+.fx dd{margin:0;font-family:Consolas,"D2Coding",monospace;overflow-wrap:anywhere}
+.gate p{margin:0;max-width:60ch}
+.gatemsg{font-weight:700;min-height:1.5em}
+.gatemsg.no{color:var(--warn)}
+.gatemsg a{color:var(--lav);font-weight:700}
+.quiz{background:var(--accent-soft);border-radius:20px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.quiz .q{margin:0;font-weight:700;font-size:1.08rem;max-width:60ch}
+.quiz .qno{display:inline-block;background:var(--accent);color:#fff;border-radius:999px;font-size:.78rem;padding:2px 10px;margin-right:8px;vertical-align:2px}
+.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.choices button{font:inherit;font-weight:700;font-size:1.05rem;background:var(--surface);color:var(--ink);border:2px solid transparent;border-radius:14px;padding:12px 14px;cursor:pointer;text-align:left}
+.choices button:hover{border-color:var(--accent)}
+.choices button b{color:var(--accent-deep);margin-right:8px}
+.ghost{font:inherit;font-size:.85rem;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;padding:4px 0}
+footer{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;color:var(--muted);font-size:.85rem}
+footer b{color:var(--accent);font-weight:700}
+.confirm{display:inline-flex;gap:10px;align-items:center}
+.confetti{position:absolute;inset:0;overflow:hidden;pointer-events:none;border-radius:20px}
+.confetti i{position:absolute;top:-12px;width:9px;height:14px;border-radius:3px;animation:fall 1.5s ease-in forwards}
+@keyframes fall{to{transform:translateY(340px) rotate(540deg);opacity:0}}
+@media (prefers-reduced-motion:reduce){.confetti{display:none}.bar i{transition:none}}
+[hidden]{display:none !important}
+@media (max-width:640px){header{grid-template-columns:1fr}.rank{min-width:0}.card{padding:22px 16px;border-radius:22px}.card h2{font-size:1.4rem}form{padding:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <span class="tag">📊 엑셀 실무 퀘스트 · 보고 트랙</span>
+      <h1>엑셀 실무 퀘스트<span>수출팀 신입의 1년</span></h1>
+      <p>가상의 화장품 회사 수출팀에 입사했습니다. 엑셀로 업무를 처리하고 답을 입력하면 다음 레벨이 열립니다. 회사, 바이어, 숫자는 모두 연습용 가상 데이터입니다.</p>
+    </div>
+    <div class="rank" id="rankCard" aria-live="polite">
+      <small>지금 내 직급</small>
+      <strong id="rank"></strong>
+      <div class="bar"><i id="bar"></i></div>
+      <span id="count"></span>
+    </div>
+  </header>
+  <nav aria-label="레벨 지도" id="map">
+    <div class="mapscroll" tabindex="0"><ol class="steps" id="steps"></ol></div>
+    <div class="soon" id="soon"></div>
+  </nav>
+  <section class="card gate" id="gate" hidden>
+    <h2><em>입사 시험.</em> 엑셀 문제 하나만 맞히면 시작해요</h2>
+    <p>수출팀 첫 출근 전에 간단한 엑셀 문제를 풀어 주세요. 한 번 맞히면 이 브라우저에서는 다시 묻지 않습니다.</p>
+    <div class="quiz">
+      <p class="q" id="quizQ"></p>
+      <div class="choices" id="quizChoices" role="group" aria-labelledby="quizQ"></div>
+    </div>
+    <p class="gatemsg" id="gateMsg" role="status"></p>
+  </section>
+  <main class="card" id="card"></main>
+  <footer id="foot">
+    <span><b>일잘러워킹맘</b> · <span id="saveNote">진행 상황은 이 브라우저에 저장됩니다.</span></span>
+    <span>
+      <button class="ghost" id="resetBtn" type="button">처음부터 다시 하기</button>
+      <span class="confirm" id="resetConfirm" hidden>기록을 지울까요?
+        <button class="ghost" id="resetYes" type="button">지우기</button>
+        <button class="ghost" id="resetNo" type="button">취소</button>
+      </span>
+    </span>
+  </footer>
+</div>
+<script>
+const DATA = {"price":[["SR-030","Hydrating Serum 30ml",3.4],["SM-025","Sheet Mask 25ml",0.34],["HG-001","Hydrogel Eye Mask",0.85],["SC-050","Sun Cream SPF50+ 50ml",2.9],["TP-070","Toner Pad 70ea",3.1],["CL-150","Cleansing Foam 150ml",1.95],["AM-030","Vita Ampoule 30ml",4.2],["CR-050","Moisture Cream 50ml",3.75]],"orders":[["PO-2501","2025-01-09","Luna Beauty","USA","SR-030",1500],["PO-2501","2025-01-09","Luna Beauty","USA","SM-025",18000],["PO-2501","2025-01-09","Luna Beauty","USA","TP-070",1000],["PO-2502","2025-01-23","Sakura Trading","Japan","HG-001",8000],["PO-2502","2025-01-23","Sakura Trading","Japan","SC-050",2500],["PO-2502","2025-01-23","Sakura Trading","Japan","CL-150",2000],["PO-2503","2025-02-06","Viet Cosme","Vietnam","SM-025",22000],["PO-2503","2025-02-06","Viet Cosme","Vietnam","TP-070",1500],["PO-2503","2025-02-06","Viet Cosme","Vietnam","SC-050",3000],["PO-2504","2025-02-19","Nordic Glow","Sweden","SR-030",1200],["PO-2504","2025-02-19","Nordic Glow","Sweden","CR-050",800],["PO-2504","2025-02-19","Nordic Glow","Sweden","CL-150",1000],["PO-2505","2025-03-05","Pacific Derm","USA","SC-050",2000],["PO-2505","2025-03-05","Pacific Derm","USA","AM-030",500],["PO-2505","2025-03-05","Pacific Derm","USA","SR-030",900],["PO-2506","2025-03-13","Desert Rose","UAE","CR-050",1000],["PO-2506","2025-03-13","Desert Rose","UAE","AM-030",700],["PO-2506","2025-03-13","Desert Rose","UAE","SC-050",2800],["PO-2507","2025-03-27","Sakura Trading","Japan","HG-001",9000],["PO-2507","2025-03-27","Sakura Trading","Japan","SM-025",12000],["PO-2507","2025-03-27","Sakura Trading","Japan","CL-150",2200],["PO-2508","2025-04-10","Saigon Beauty","Vietnam","SM-025",15000],["PO-2508","2025-04-10","Saigon Beauty","Vietnam","HG-001",4000],["PO-2508","2025-04-10","Saigon Beauty","Vietnam","TP-070",800],["PO-2509","2025-04-24","Luna Beauty","USA","SR-030",2000],["PO-2509","2025-04-24","Luna Beauty","USA","SM-025",20000],["PO-2509","2025-04-24","Luna Beauty","USA","HG-001",6000],["PO-2509","2025-04-24","Luna Beauty","USA","SC-050",3500],["PO-2510","2025-05-08","Nordic Glow","Sweden","SR-030",1400],["PO-2510","2025-05-08","Nordic Glow","Sweden","TP-070",700],["PO-2510","2025-05-08","Nordic Glow","Sweden","CR-050",600],["PO-2511","2025-05-22","Viet Cosme","Vietnam","SM-025",28000],["PO-2511","2025-05-22","Viet Cosme","Vietnam","SC-050",4500],["PO-2511","2025-05-22","Viet Cosme","Vietnam","CL-150",1500],["PO-2512","2025-06-05","Sakura Trading","Japan","HG-001",7000],["PO-2512","2025-06-05","Sakura Trading","Japan","SR-030",1000],["PO-2512","2025-06-05","Sakura Trading","Japan","SM-025",14000],["PO-2513","2025-06-19","Desert Rose","UAE","SC-050",3000],["PO-2513","2025-06-19","Desert Rose","UAE","TP-070",900],["PO-2513","2025-06-19","Desert Rose","UAE","CR-050",700],["PO-2601","2026-01-08","Luna Beauty","USA","SR-030",2000],["PO-2601","2026-01-08","Luna Beauty","USA","SM-025",20000],["PO-2601","2026-01-08","Luna Beauty","USA","TP-070",1200],["PO-2602","2026-01-21","Sakura Trading","Japan","HG-001",10000],["PO-2602","2026-01-21","Sakura Trading","Japan","SC-050",3000],["PO-2602","2026-01-21","Sakura Trading","Japan","CL-150",2500],["PO-2603","2026-02-04","Nordic Glow","Sweden","SR-030",1500],["PO-2603","2026-02-04","Nordic Glow","Sweden","CR-050",1000],["PO-2603","2026-02-04","Nordic Glow","Sweden","LB-010",3000],["PO-2604","2026-02-11","Pacific Derm","USA","SC-050",2400],["PO-2604","2026-02-11","Pacific Derm","USA","AM-030",600],["PO-2604","2026-02-11","Pacific Derm","USA","SR-030",1100],["PO-2605","2026-02-17","Viet Cosme","Vietnam","SM-025",30000],["PO-2605","2026-02-17","Viet Cosme","Vietnam","TP-070",2000],["PO-2605","2026-02-17","Viet Cosme","Vietnam","SC-050",4000],["PO-2605","2026-02-17","Viet Cosme","Vietnam","AM-030",800],["PO-2606","2026-03-03","Luna Beauty","USA","SR-030",3000],["PO-2606","2026-03-03","Luna Beauty","USA","SM-025",25000],["PO-2606","2026-03-03","Luna Beauty","USA","HG-001",8000],["PO-2606","2026-03-03","Luna Beauty","USA","SC-050",5000],["PO-2606","2026-03-03","Luna Beauty","USA","TP-070",1500],["PO-2607","2026-03-12","Desert Rose","UAE","CR-050",1200],["PO-2607","2026-03-12","Desert Rose","UAE","AM-030",600],["PO-2607","2026-03-12","Desert Rose","UAE","EC-015",2000],["PO-2608","2026-03-26","Sakura Trading","Japan","HG-001",12000],["PO-2608","2026-03-26","Sakura Trading","Japan","CL-150",3000],["PO-2608","2026-03-26","Sakura Trading","Japan","SM-025",15000],["PO-2609","2026-04-09","Nordic Glow","Sweden","SR-030",1800],["PO-2609","2026-04-09","Nordic Glow","Sweden","TP-070",900],["PO-2609","2026-04-09","Nordic Glow","Sweden","LB-010",2500],["PO-2610","2026-04-15","Kobe Cosme","Japan","HG-001",5000],["PO-2610","2026-04-15","Kobe Cosme","Japan","CL-150",1800],["PO-2610","2026-04-15","Kobe Cosme","Japan","TP-070",600],["PO-2611","2026-04-22","Viet Cosme","Vietnam","SM-025",40000],["PO-2611","2026-04-22","Viet Cosme","Vietnam","SC-050",6000],["PO-2611","2026-04-22","Viet Cosme","Vietnam","CL-150",2000],["PO-2612","2026-05-07","Luna Beauty","USA","SR-030",2500],["PO-2612","2026-05-07","Luna Beauty","USA","CR-050",1500],["PO-2612","2026-05-07","Luna Beauty","USA","AM-030",1000],["PO-2612","2026-05-07","Luna Beauty","USA","HS-200",1200],["PO-2613","2026-05-13","Saigon Beauty","Vietnam","SM-025",17000],["PO-2613","2026-05-13","Saigon Beauty","Vietnam","HG-001",4500],["PO-2614","2026-05-20","Desert Rose","UAE","SC-050",3500],["PO-2614","2026-05-20","Desert Rose","UAE","TP-070",1100],["PO-2614","2026-05-20","Desert Rose","UAE","EC-015",1500],["PO-2615","2026-06-04","Sakura Trading","Japan","HG-001",9000],["PO-2615","2026-06-04","Sakura Trading","Japan","SM-025",18000],["PO-2615","2026-06-04","Sakura Trading","Japan","SR-030",1200],["PO-2616","2026-06-18","Nordic Glow","Sweden","CL-150",1600],["PO-2616","2026-06-18","Nordic Glow","Sweden","CR-050",900],["PO-2616","2026-06-18","Nordic Glow","Sweden","AM-030",700],["PO-2617","2026-06-25","Viet Cosme","Vietnam","SM-025",22000],["PO-2617","2026-06-25","Viet Cosme","Vietnam","TP-070",1300]],"base":91,"po1":"PO-2606","ponew":"PO-2617","topC":"Vietnam","c5":"USA","sel6":["Japan","USA"]};
+const KEYS = ["1l6h6l5uluu","tn9ypq835j","1lgi7qo4g74","2ab4qt9a7vf","10kmwjkttb","1huz9b993iw","yg67im10o9"];
+const ALT = {"0":"4s7yfd5ls7","3":"1jb9ekcivco"};
+const QUIZ=[
+ {q:"VLOOKUP에서 '정확히 일치'로 찾을 때 마지막 칸에 넣는 값은?",c:["TRUE","FALSE","1","2"],a:"FALSE",post:{t:"VLOOKUP 글",u:"https://blog.naver.com/hjjung84/224438314514"}},
+ {q:"데이터를 표로 만드는 단축키는?",c:["Ctrl+T","Ctrl+P","Ctrl+S","Ctrl+F"],a:"Ctrl+T",post:{t:"엑셀 표 만들기 글",u:"https://blog.naver.com/hjjung84/224468415218"}},
+ {q:"수식의 범위를 $로 고정할 때 누르는 키는?",c:["F2","F4","F5","F9"],a:"F4",post:{t:"VLOOKUP 글",u:"https://blog.naver.com/hjjung84/224438314514"}}];
+const LOCKED = ["데이터 정리","월·분기 그룹","SUMIFS 검산","슬라이서 연결","피벗 차트","대시보드"];
+const ORDER_COLS = ["PO No.","발주일","Buyer","Country","Item No.","수량"];
+const PV="https://blog.naver.com/hjjung84/";
+const REUSE="준비 단계에서 만든 발주 내역 표가 있으면 그대로 쓰세요. 없으면 아래 표를 복사해 새 시트의 A1에 붙여 넣으세요.";
+const LEVELS = [
+ {name:"준비 표 만들기", short:"준비 단계", title:"준비. 발주 내역을 표로 만들기", who:"사수 선배",
+  memo:"일 시작하기 전에 발주 내역부터 표로 만들어 둬요. 그래야 새 PO를 추가해도 범위가 알아서 늘어나요. 마침 오늘 들어온 "+DATA.ponew+"도 같이 넣어 줘요.",
+  task:"발주 내역을 Ctrl+T로 표로 만들고, 표 바로 아래 행에 새 PO 2줄을 붙여 넣으세요. 그다음 요약 행을 켜고, 요약 행에 나오는 수량 합계(개)를 입력하세요.",
+  note:"순서대로 하세요: 표 만들기 → 새 PO 붙여 넣기 → 요약 행 켜기. 이 표는 뒤 레벨에서 계속 씁니다.",
+  paste:"발주 내역은 새 시트의 A1에 붙여 넣으세요. 새 PO 2줄은 표를 만든 뒤, 표 바로 아래 첫 빈 행에 붙여 넣습니다.",
+  tables:["base","extra"], label:"요약 행의 수량 합계 (개)", kind:"int",
+  hints:["데이터 안의 아무 셀이나 클릭하고 Ctrl+T를 누르세요. '머리글 포함'에 체크된 것을 확인하고 확인을 누릅니다. 요약 행은 표 안을 클릭한 뒤 테이블 디자인(버전에 따라 디자인) 탭에서 '요약 행'에 체크하면 표 맨 아래에 생깁니다.",
+         "새 PO 2줄은 요약 행을 켜기 전에, 표 마지막 행 바로 아래 A열 셀에 붙여 넣어야 표가 2줄 늘어납니다. 줄무늬 서식이 새 행까지 이어졌는지 확인하세요. 요약 행에 합계가 안 보이면 수량 열의 요약 칸을 눌러 '합계'를 고릅니다."],
+  altMsg:"새 PO 2줄이 표에 들어가지 않은 합계입니다. 표 바로 아래 행에 붙여 넣어 표가 늘어났는지 확인해 보세요.",
+  post:{t:"엑셀 표 만들기 Ctrl+T 글 다시 보기", u:PV+"224468415218"},
+  tip:"표 이름을 '발주내역'처럼 바꿔 두면 나중에 수식과 피벗에서 찾기 쉽습니다. 표 안을 클릭하고 테이블 디자인 탭 왼쪽의 '표 이름'에서 바꿉니다."},
+ {name:"Lv 1 VLOOKUP", short:"Lv 1", title:"Lv 1. 단가표에서 찾아와", who:"팀장님",
+  memo:"2026년 3월에 Luna Beauty에서 들어온 "+DATA.po1+" 주문 총액이 얼마인지 알려 줘요. 단가는 단가표에서 찾아오면 돼요.",
+  task:"주문서의 품목마다 VLOOKUP으로 단가를 가져오고, 수량 × 단가를 모두 더한 주문 총액(USD)을 입력하세요.",
+  note:"", paste:"표 두 개를 엑셀의 서로 다른 위치(또는 시트)에 붙여 넣고 시작하세요.",
+  tables:["lv1order","price"], label:DATA.po1+" 주문 총액 (USD)", kind:"money",
+  hints:["주문서에 단가 열을 만들고 =VLOOKUP(품목 코드, 단가표 범위, 3, FALSE) 로 단가를 가져오세요. 그다음 수량 × 단가를 5줄 모두 더합니다.",
+         "단가표 범위를 $로 고정했는지(F4), 마지막 인수가 FALSE인지 확인해 보세요. 단가가 #N/A로 나오는 줄이 있으면 범위가 밀린 것입니다."],
+  post:{t:"VLOOKUP 글 다시 보기", u:PV+"224438314514"},
+  tip:"VLOOKUP의 마지막 인수는 FALSE(정확히 일치)로 두고, 단가표 범위는 F4로 고정하세요. 수식을 아래로 복사해도 범위가 밀리지 않습니다."},
+ {name:"Lv 2 XLOOKUP", short:"Lv 2", title:"Lv 2. 품목 코드가 오른쪽 열에 있다", who:"팀장님",
+  memo:"본사에서 새 단가표가 내려왔는데 품목 코드가 맨 오른쪽 열에 있어요. 발주 내역 전체에 단가를 붙이고, 단가표에 없는 코드가 몇 건인지 알려 줘요.",
+  task:"발주 내역의 모든 행에 XLOOKUP으로 단가를 가져오세요. 단가표에 없는 코드는 \"확인 필요\"로 표시하고, \"확인 필요\"가 나온 행의 수(건)를 입력하세요.",
+  note:"XLOOKUP은 엑셀 2021과 Microsoft 365에서 쓸 수 있습니다. 없는 버전이라면 INDEX + MATCH에 IFERROR를 씌워도 같은 답이 나옵니다.",
+  paste:"준비 단계에서 만든 발주 내역 표가 있으면 그대로 쓰세요. 새 단가표만 다른 시트에 붙여 넣으면 됩니다.",
+  tables:["price2","orders"], label:"\"확인 필요\" 건수", kind:"int",
+  hints:["=XLOOKUP(품목 코드, 단가표의 Item No. 열, 단가 열, \"확인 필요\") 처럼 네 번째 인수에 표시할 말을 넣으세요.",
+         "\"확인 필요\"가 나온 행은 =COUNTIF(단가 열, \"확인 필요\") 로 셀 수 있습니다. 품목 종류의 수가 아니라 행(건)의 수입니다."],
+  post:{t:"XLOOKUP 글 다시 보기", u:PV+"224432075105"},
+  tip:"XLOOKUP은 네 번째 인수에 \"확인 필요\"를 넣으면 IFERROR 없이도 없는 코드를 표시할 수 있습니다. 찾는 열이 오른쪽에 있어도 됩니다."},
+ {name:"Lv 3 피벗 만들기", short:"Lv 3", title:"Lv 3. 월별 발주 수량 보고", who:"팀장님",
+  memo:"월간 회의에 쓸 거예요. 발주 수량을 월별로 정리하고, 2026년 3월 합계부터 알려 줘요.",
+  task:"발주 내역으로 피벗 테이블을 만들어 연도별·월별 발주 수량 합계를 구하고, 2026년 3월 합계(개)를 입력하세요.",
+  note:"금액이 아니라 수량 합계입니다. 데이터에 2025년과 2026년이 함께 들어 있습니다.",
+  paste:REUSE, tables:["orders"], label:"2026년 3월 발주 수량 합계 (개)", kind:"int",
+  hints:["발주 내역 안을 클릭하고 삽입 > 피벗 테이블을 누른 뒤, 행에 발주일, 값에 수량을 넣으세요. 값이 '개수'로 나오면 값 필드 설정에서 '합계'로 바꿉니다.",
+         "발주일이 날짜별로 나오면 날짜 셀을 우클릭해 그룹을 누르고 '월'과 '연'을 함께 고르세요. '월'만 고르면 2025년 3월과 2026년 3월이 한 줄로 합쳐집니다."],
+  altMsg:"2025년 3월과 2026년 3월이 합쳐진 값입니다. 날짜 그룹에서 '월'과 '연'을 함께 골라 연도를 나눠 보세요.",
+  post:{t:"피벗 테이블 1편 다시 보기", u:PV+"224445619342"},
+  tip:"여러 해가 섞인 데이터는 날짜를 '월'로만 묶으면 연도가 합쳐집니다. 그룹에서 '연'을 함께 고르는 습관을 들이세요."},
+ {name:"Lv 4 국가·바이어별", short:"Lv 4", title:"Lv 4. 바이어 미팅 준비", who:"팀장님",
+  memo:"다음 주에 바이어 미팅이 있어요. 2년 치 발주 수량을 국가별, 바이어별로 보고 싶어요. 수량이 제일 많은 국가에서는 어느 바이어가 얼마나 샀는지 알려 줘요.",
+  task:"행에 국가(Country), 그 아래에 바이어(Buyer)를 넣은 피벗 테이블을 만드세요. 수량 합계가 가장 큰 국가를 찾고, 그 국가에서 수량이 더 많은 바이어의 합계(개)를 입력하세요.",
+  note:"전체 기간(2025~2026년 상반기) 기준입니다.",
+  paste:REUSE, tables:["orders"], label:"1위 국가의 1위 바이어 수량 합계 (개)", kind:"int",
+  hints:["피벗 테이블 필드에서 Country를 행에 먼저 넣고, 그 아래에 Buyer를 넣으세요. 값에는 수량(합계)을 넣습니다. 순서가 바뀌면 바이어 아래에 국가가 붙습니다.",
+         "국가 이름 줄에 나오는 숫자가 국가 합계입니다. 가장 큰 국가를 찾은 뒤, 그 아래 바이어 중 큰 숫자를 입력하세요. 국가 합계를 입력하면 오답입니다."],
+  post:{t:"피벗 테이블 2편 다시 보기", u:PV+"224451747531"},
+  tip:"행에 넣는 순서가 보고서 모양을 정합니다. 큰 분류(국가)를 위에, 작은 분류(바이어)를 아래에 두세요."},
+ {name:"Lv 5 전년 대비", short:"Lv 5", title:"Lv 5. 상반기 전년 대비 보고", who:"팀장님",
+  memo:"상반기 실적을 작년과 비교해서 보고해야 해요. 국가별로 작년 상반기 대비 얼마나 늘었는지 증감률로 정리하고, "+DATA.c5+"부터 알려 줘요.",
+  task:"행에 국가, 열에 연도, 값에 수량 합계를 넣은 피벗 테이블을 만들고, 2026년의 전년 대비 증감률을 구하세요. "+DATA.c5+"의 증감률(%)을 소수 첫째 자리까지 입력하세요.",
+  note:"두 해 모두 1~6월 데이터라 같은 기간끼리 비교됩니다. 예: 12.3",
+  paste:REUSE, tables:["orders"], label:DATA.c5+" 전년 대비 증감률 (%)", kind:"pct",
+  hints:["행에 Country, 열에 발주일의 '연', 값에 수량을 넣으세요. 발주일이 연도로 안 묶이면 날짜 셀을 우클릭해 그룹 > '연'을 고릅니다.",
+         "수량을 값 영역에 한 번 더 넣고, 그 값을 우클릭해 값 표시 형식 > [기준값]에 대한 비율의 차이를 고르세요. 기준 필드는 '연', 기준 항목은 '(이전)'입니다. 직접 계산한다면 (2026년 − 2025년) ÷ 2025년입니다."],
+  post:{t:"피벗 테이블 3편 다시 보기", u:PV+"224460324968"},
+  tip:"전년 대비는 꼭 같은 기간끼리 비교하세요. 한쪽은 1년 치, 다른 쪽은 반년 치면 증감률이 의미가 없습니다."},
+ {name:"Lv 6 슬라이서", short:"Lv 6", title:"Lv 6. 클릭으로 골라 보는 보고서", who:"팀장님",
+  memo:"회의 중에 \"일본이랑 미국 2분기만 보여 줘요\" 같은 질문이 바로 나와요. 클릭 한 번으로 바꿔 볼 수 있게 슬라이서를 달아 줘요.",
+  task:"Lv 5의 피벗 테이블에 국가 슬라이서와 분기 슬라이서를 추가하세요. 국가는 "+DATA.sel6.join("과 ")+" 두 개, 분기는 2분기를 골랐을 때 2026년 수량 합계(개)를 입력하세요.",
+  note:"슬라이서에서 여러 개를 고를 때는 Ctrl을 누른 채 클릭합니다.",
+  paste:REUSE, tables:["orders"], label:DATA.sel6.join(" + ")+", 2분기의 2026년 수량 합계 (개)", kind:"int",
+  hints:["피벗 테이블을 클릭하고 피벗 테이블 분석 > 슬라이서 삽입에서 Country와 '분기'에 체크하세요. '분기'가 목록에 없으면 날짜 셀을 우클릭해 그룹에서 '분기'를 함께 고릅니다.",
+         "국가 슬라이서에서 첫 번째 국가를 클릭하고, Ctrl을 누른 채 두 번째 국가를 클릭하세요. 분기 슬라이서에서는 2분기만 고릅니다. 2026년 열의 총합계가 정답입니다."],
+  post:{t:"피벗 테이블 3편 다시 보기", u:PV+"224460324968"},
+  tip:"슬라이서 오른쪽 위의 필터 지우기 단추를 누르면 다시 전체가 보입니다. 보고 전에는 선택이 남아 있지 않은지 확인하세요."}
+];
+const TABLES = {
+  lv1order:{title:DATA.po1+" 주문서", sub:"Luna Beauty · 5행", cols:ORDER_COLS, rows:()=>DATA.orders.filter(r=>r[0]===DATA.po1), num:[5]},
+  orders:{title:"2025~2026 상반기 발주 내역", sub:"새 PO 포함 "+DATA.orders.length+"행", cols:ORDER_COLS, rows:()=>DATA.orders, num:[5]},
+  base:{title:"2025~2026 상반기 발주 내역", sub:DATA.base+"행", cols:ORDER_COLS, rows:()=>DATA.orders.slice(0,DATA.base), num:[5]},
+  extra:{title:"새 PO 2줄", sub:"복사하면 머리글 없이 2줄만 복사됩니다", cols:ORDER_COLS, rows:()=>DATA.orders.slice(DATA.base), num:[5], nohead:true},
+  price:{title:"단가표", sub:"품목 코드가 왼쪽", cols:["Item No.","Description","단가(USD)"], rows:()=>DATA.price, num:[2]},
+  price2:{title:"새 단가표", sub:"품목 코드가 오른쪽", cols:["Description","단가(USD)","Item No."], rows:()=>DATA.price.map(r=>[r[1],r[2],r[0]]), num:[1]}
+};
+function h(s){let a=0xdeadbeef^7,b=0x41c6ce57^7;for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);a=Math.imul(a^c,2654435761);b=Math.imul(b^c,1597334677);}
+  a=Math.imul(a^(a>>>16),2246822507)^Math.imul(b^(b>>>13),3266489909);b=Math.imul(b^(b>>>16),2246822507)^Math.imul(a^(a>>>13),3266489909);
+  return (4294967296*(2097151&b)+(a>>>0)).toString(36);}
+function norm(v,kind){const n=parseFloat(String(v).replace(/[^0-9.\-]/g,""));if(!isFinite(n))return null;if(kind==="pct")return (Math.abs(n)<1?n*100:n).toFixed(1);return kind==="money"?n.toFixed(2):String(Math.round(n*1000)/1000);}
+const store={get(){try{return JSON.parse(localStorage.getItem("xl-levelup-3")||"{}");}catch(e){return null;}},
+  set(o){try{localStorage.setItem("xl-levelup-3",JSON.stringify(o));return true;}catch(e){return false;}}};
+let saved=store.get();
+if(saved===null){document.getElementById("saveNote").textContent="이 브라우저에서는 진행 상황을 저장할 수 없습니다. 창을 닫으면 처음부터 시작합니다.";saved={};}
+let state={cleared:Math.min(saved.cleared||0,LEVELS.length),view:0,tries:{},hints:{},unlocked:!!saved.unlocked};
+const save=()=>store.set({cleared:state.cleared,unlocked:state.unlocked});
+state.view=Math.min(state.cleared,LEVELS.length-1);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const RANKS=["입사 첫날","표 좀 아는 신입","단가표 담당","없는 코드 해결사","월간 보고 담당","바이어 분석 담당","전년 대비 보고자","슬라이서까지 하는 일잘러"];
+function renderSteps(){
+  const ol=document.getElementById("steps");ol.innerHTML="";
+  LEVELS.forEach((L,i)=>{const li=document.createElement("li"),b=document.createElement("button");b.type="button";
+    const done=i<state.cleared,open=i<=state.cleared,tk=L.name.split(" "),lv=tk[0]==="Lv";
+    if(done)li.className="reached";
+    b.className=(done?"done ":open?"open ":"")+(i===state.view?"current":"");b.disabled=!open;
+    b.setAttribute("aria-label",L.name+" "+(done?"완료":open?"진행 중":"잠김"));
+    b.innerHTML='<span class="dot">'+(done?"✔":lv?tk[1]:tk[0])+'</span><span class="lbl">'+esc(tk.slice(lv?2:1).join(" "))+'</span>';
+    if(i===state.view)b.setAttribute("aria-current","step");
+    b.addEventListener("click",()=>{state.view=i;render();});li.appendChild(b);ol.appendChild(li);});
+  document.getElementById("soon").innerHTML='<b>곧 열릴 레벨</b>'+LOCKED.map(n=>'<span>'+esc(n)+'</span>').join("");
+  document.getElementById("rank").textContent=RANKS[state.cleared];
+  document.getElementById("bar").style.width=(state.cleared/LEVELS.length*100)+"%";
+  document.getElementById("count").textContent=LEVELS.length+"단계 중 "+state.cleared+"단계 완료";
+}
+function tableHtml(key){const T=TABLES[key],rows=T.rows();
+  return '<div><div class="tablehead"><strong>'+esc(T.title)+' <span>'+esc(T.sub)+'</span></strong>'+
+   '<button class="copy" type="button" data-copy="'+key+'">표 복사</button></div>'+
+   '<div class="scroll" tabindex="0"><table id="t-'+key+'"><thead><tr>'+T.cols.map((c,i)=>'<th'+(T.num.includes(i)?' class="num"':'')+'>'+esc(c)+'</th>').join("")+'</tr></thead><tbody>'+
+   rows.map(r=>'<tr>'+r.map((c,i)=>'<td'+(T.num.includes(i)?' class="num"':'')+'>'+esc(c)+'</td>').join("")+'</tr>').join("")+
+   '</tbody></table></div><p class="copymsg" id="m-'+key+'" role="status"></p></div>';
+}
+function render(){
+  renderSteps();
+  const i=state.view,L=LEVELS[i],done=i<state.cleared,card=document.getElementById("card");
+  const ti=L.title.indexOf(". ");
+  card.innerHTML='<h2><em>'+esc(L.title.slice(0,ti+1))+'</em> '+esc(L.title.slice(ti+2))+'</h2>'+
+   '<div class="memo"><span class="face" aria-hidden="true">'+esc(L.who.slice(0,2))+'</span><div class="bubble"><span class="who">'+esc(L.who)+'의 요청</span><p>'+esc(L.memo)+'</p></div></div>'+
+   '<div class="task"><h3>과제</h3><p>'+esc(L.task)+'</p>'+(L.note?'<p class="note">'+esc(L.note)+'</p>':'')+'</div>'+
+   '<div class="data"><h3>연습 데이터 (복사해서 엑셀에 붙여 넣으세요)</h3><p class="paste">'+esc(L.paste)+'</p>'+L.tables.map(tableHtml).join("")+'</div>'+
+   '<form id="ansForm" novalidate><label for="ans">'+esc(L.label)+'<input id="ans" name="ans" inputmode="decimal" autocomplete="off" placeholder="숫자만 입력"></label>'+
+   '<button class="primary" type="submit">정답 확인</button><button class="copy hintbtn" type="button" id="hintBtn"></button></form>'+
+   '<div id="hintBox" aria-live="polite"></div><div id="result" aria-live="polite"></div>';
+  document.getElementById("hintBtn").addEventListener("click",()=>{moreHint(i);});
+  drawHints(i);
+  card.querySelectorAll("[data-copy]").forEach(b=>b.addEventListener("click",()=>copyTable(b.dataset.copy)));
+  document.getElementById("ansForm").addEventListener("submit",e=>{e.preventDefault();check();});
+  if(done)showOk(i);
+}
+function copyTable(key){const T=TABLES[key],msg=document.getElementById("m-"+key);
+  const tsv=(T.nohead?[]:[T.cols]).concat(T.rows()).map(r=>r.join("\t")).join("\n");
+  const fail=()=>{const t=document.getElementById("t-"+key),r=document.createRange();r.selectNodeContents(t);const s=getSelection();s.removeAllRanges();s.addRange(r);
+    msg.textContent="자동 복사가 막혀 표를 선택해 두었습니다. Ctrl+C로 복사한 뒤 엑셀에 붙여 넣으세요.";};
+  try{navigator.clipboard.writeText(tsv).then(()=>{msg.textContent="복사했습니다. 엑셀 빈 셀에서 Ctrl+V로 붙여 넣으세요.";},fail);}catch(e){fail();}
+}
+function check(){const i=state.view,L=LEVELS[i],box=document.getElementById("result"),v=norm(document.getElementById("ans").value,L.kind);
+  if(v===null){box.innerHTML='<div class="result no"><p class="head">숫자를 입력해 주세요.</p><p>쉼표나 $ 기호는 있어도 됩니다. 예: 12,345</p></div>';return;}
+  if(h("L"+i+":"+v)===KEYS[i]){if(state.cleared<i+1){state.cleared=i+1;save();}renderSteps();showOk(i,true);return;}
+  const n=state.tries[i]=(state.tries[i]||0)+1,had=state.hints[i]||0;
+  if(L.altMsg&&ALT[i]&&h("L"+i+":"+v)===ALT[i]){box.innerHTML='<div class="result no"><p class="head">아직 정답이 아닙니다. ('+n+'번째 시도)</p><p>'+esc(L.altMsg)+'</p></div>';return;}
+  moreHint(i);
+  box.innerHTML='<div class="result no"><p class="head">아직 정답이 아닙니다. ('+n+'번째 시도)</p><p>'+(had<L.hints.length?'위에 힌트를 하나 더 열었습니다.':'위 힌트와 블로그 글을 다시 확인해 보세요.')+'</p></div>';
+}
+function moreHint(i){state.hints[i]=Math.min((state.hints[i]||0)+1,LEVELS[i].hints.length);drawHints(i);}
+function drawHints(i){const L=LEVELS[i],n=state.hints[i]||0,btn=document.getElementById("hintBtn"),box=document.getElementById("hintBox");
+  btn.textContent=n<L.hints.length?"힌트 보기 ("+n+"/"+L.hints.length+")":"힌트 모두 열림";btn.disabled=n>=L.hints.length;
+  box.innerHTML=n?'<div class="hints">'+L.hints.slice(0,n).map((x,k)=>'<p><b>힌트 '+(k+1)+'</b> '+esc(x)+'</p>').join("")+
+    '<p><a href="'+L.post.u+'" target="_blank" rel="noopener">'+esc(L.post.t)+'</a></p></div>':"";}
+const AZ="ABCDEFGHIJ";
+function sheet(title,rows,marks,fx){const w=Math.max(...rows.map(r=>r.length));
+  return '<div class="sheet"><h4>'+esc(title)+'</h4><div class="scroll" tabindex="0"><table><thead><tr><th class="rc"></th>'+
+   Array.from({length:w},(_,c)=>'<th>'+AZ[c]+'</th>').join("")+'</tr></thead><tbody>'+
+   rows.map((r,ri)=>'<tr'+(ri===0?' class="hd"':'')+'><td class="rc">'+(ri+1)+'</td>'+Array.from({length:w},(_,c)=>{const v=r[c]===undefined?"":r[c],k=AZ[c]+(ri+1);
+     return '<td class="'+(typeof v==="number"?"num ":"")+(marks[k]||(v==="확인 필요"?"hl":""))+'">'+esc(typeof v==="number"?v.toLocaleString("en-US"):v)+'</td>';}).join("")+'</tr>').join("")+
+   '</tbody></table></div><dl class="fx">'+fx.map(f=>'<dt>'+esc(f[0])+'</dt><dd>'+esc(f[1])+'</dd>').join("")+'</dl></div>';}
+function solution(i){const O=DATA.orders,pm=Object.fromEntries(DATA.price.map(r=>[r[0],r[2]])),np=DATA.price.length+1,Q='"확인 필요"';
+  const S=f=>O.filter(f).reduce((s,r)=>s+r[5],0),yr=r=>r[1].slice(0,4),mo=r=>Number(r[1].slice(5,7)),cs=[...new Set(O.map(r=>r[3]))].sort();
+  if(i===0){const e=O.length+1;
+    return sheet("완성 화면: 표로 만든 발주 내역 (새 PO 2줄 + 요약 행)",[ORDER_COLS].concat(O,[["요약","","","","",S(()=>true)]]),{["F"+(e+1)]:"ans"},[["F"+(e+1),"=SUBTOTAL(109,[수량])"],["참고","요약 행을 켜면 엑셀이 이 수식을 자동으로 넣습니다."]]);}
+  if(i===1){const rs=O.filter(r=>r[0]===DATA.po1),body=rs.map(r=>r.concat([pm[r[4]],Math.round(r[5]*pm[r[4]]*100)/100])),e=rs.length+1;
+    const tot=body.reduce((s,r)=>s+r[7],0),rows=[ORDER_COLS.concat(["단가(USD)","금액(USD)"])].concat(body,[["","","","","","","합계",tot]]);
+    return sheet("완성 화면: 주문서 시트",rows,{["H"+(e+1)]:"ans"},[["G2","=VLOOKUP(E2,단가표!$A$2:$C$"+np+",3,FALSE)"],["H2","=F2*G2"],["H"+(e+1),"=SUM(H2:H"+e+")"]]);}
+  if(i===2){const body=O.map(r=>r.concat([r[4] in pm?pm[r[4]]:"확인 필요"])),e=body.length+1,cnt=body.filter(r=>r[6]==="확인 필요").length;
+    const rows=[ORDER_COLS.concat(["단가(USD)","확인 필요 건수"])].concat(body);rows[1]=rows[1].concat([cnt]);
+    return sheet("완성 화면: 발주 내역 시트 (주황색 칸이 없는 코드)",rows,{H2:"ans"},[["G2","=XLOOKUP(E2,단가표!$C$2:$C$"+np+",단가표!$B$2:$B$"+np+","+Q+")"],["G2 (XLOOKUP이 없는 버전)","=IFERROR(INDEX(단가표!$B$2:$B$"+np+",MATCH(E2,단가표!$C$2:$C$"+np+",0)),"+Q+")"],["읽는 법","MATCH가 Item No. 열에서 코드의 위치를 찾고, INDEX가 단가 열의 같은 위치 값을 가져옵니다. 코드가 없으면 오류가 나므로 IFERROR로 "+Q+"를 표시합니다."],["H2","=COUNTIF(G2:G"+e+","+Q+")  → "+cnt+"건"]]);}
+  if(i===3){const rows=[["행 레이블","합계 : 수량"]],mk={};
+    ["2025","2026"].forEach(y=>{rows.push([y+"년",S(r=>yr(r)===y)]);[...new Set(O.filter(r=>yr(r)===y).map(mo))].sort((a,b)=>a-b).forEach(m=>{rows.push(["\u3000"+m+"월",S(r=>yr(r)===y&&mo(r)===m)]);if(y==="2026"&&m===3)mk["B"+rows.length]="ans";});});
+    rows.push(["총합계",S(()=>true)]);
+    return sheet("완성 화면: 연·월로 묶은 피벗 테이블",rows,mk,[["행","발주일 (연, 월로 그룹)"],["값","수량 (합계)"]]);}
+  if(i===4){const rows=[["행 레이블","합계 : 수량"]],mk={};
+    cs.forEach(c=>{rows.push([c,S(r=>r[3]===c)]);const bs=[...new Set(O.filter(r=>r[3]===c).map(r=>r[2]))].sort().map(b=>[b,S(r=>r[2]===b)]),mx=Math.max(...bs.map(b=>b[1]));
+      bs.forEach(b=>{rows.push(["\u3000"+b[0],b[1]]);if(c===DATA.topC&&b[1]===mx)mk["B"+rows.length]="ans";});});
+    rows.push(["총합계",S(()=>true)]);
+    return sheet("완성 화면: 국가 > 바이어 피벗 테이블",rows,mk,[["행","Country, 그 아래 Buyer"],["값","수량 (합계)"]]);}
+  if(i===5){const rows=[["행 레이블","2025년","2026년","증감액","증감률"]],mk={};
+    cs.concat(["총합계"]).forEach(c=>{const f=c==="총합계"?()=>true:r=>r[3]===c,a=S(r=>f(r)&&yr(r)==="2025"),b=S(r=>f(r)&&yr(r)==="2026");
+      rows.push([c,a,b,b-a,((b-a)/a*100).toFixed(1)+"%"]);if(c===DATA.c5)mk["E"+rows.length]="ans";});
+    return sheet("완성 화면: 국가별 전년 대비",rows,mk,[["행 / 열","Country / 발주일의 연"],["증감액","값 표시 형식 > [기준값]과의 차이 (기준 필드: 연, 기준 항목: (이전))"],["증감률","값 표시 형식 > [기준값]에 대한 비율의 차이 (기준 필드: 연, 기준 항목: (이전))"],["참고","실제 피벗에서는 증감액과 증감률이 2026년 아래에 나옵니다. 여기서는 보기 쉽게 옆으로 정리했습니다."]]);}
+  const q2=r=>mo(r)>=4&&mo(r)<=6,sel=DATA.sel6.slice().sort(),rows=[["행 레이블","2025년","2026년"]];
+  sel.forEach(c=>rows.push([c,S(r=>r[3]===c&&q2(r)&&yr(r)==="2025"),S(r=>r[3]===c&&q2(r)&&yr(r)==="2026")]));
+  rows.push(["총합계",S(r=>sel.includes(r[3])&&q2(r)&&yr(r)==="2025"),S(r=>sel.includes(r[3])&&q2(r)&&yr(r)==="2026")]);
+  return sheet("완성 화면: 슬라이서로 고른 피벗 테이블",rows,{["C"+rows.length]:"ans"},[["국가 슬라이서",sel.join(", ")],["분기 슬라이서","2분기"],["값","수량 (합계)"]]);}
+function showOk(i,fresh){const L=LEVELS[i],box=document.getElementById("result"),last=i===LEVELS.length-1;
+  box.innerHTML='<div class="result ok">'+(fresh?'<div class="confetti" aria-hidden="true">'+Array.from({length:18},(_,k)=>'<i style="left:'+(4+k*5.3)+'%;background:'+["#2fa37a","#7a68c8","#29264f","#f2b84b"][k%4]+';animation-delay:'+(k%6)*0.08+'s"></i>').join("")+'</div>':'')+
+   '<p class="head">✔ 정답입니다. '+esc(L.short)+' 완료</p><div class="chips"><span>새 직급: '+esc(RANKS[i+1])+'</span></div><p><b>실무 팁</b> '+esc(L.tip)+'</p>'+solution(i)+
+   (last?'<p>보고 트랙은 여기까지 열려 있습니다. 다음 레벨은 블로그 글과 함께 추가됩니다.</p>':'<button class="primary next" type="button" id="nextBtn">다음 레벨로</button>')+'</div>';
+  const nb=document.getElementById("nextBtn");if(nb)nb.addEventListener("click",()=>{state.view=i+1;render();document.getElementById("card").scrollIntoView();});
+}
+const rb=document.getElementById("resetBtn"),rc=document.getElementById("resetConfirm");
+rb.addEventListener("click",()=>{rb.hidden=true;rc.hidden=false;});
+document.getElementById("resetNo").addEventListener("click",()=>{rb.hidden=false;rc.hidden=true;});
+document.getElementById("resetYes").addEventListener("click",()=>{state={cleared:0,view:0,tries:{},hints:{},unlocked:true};save();rb.hidden=false;rc.hidden=true;render();});
+function gate(){const on=!state.unlocked;
+  document.getElementById("gate").hidden=!on;
+  ["map","card","rankCard","foot"].forEach(id=>document.getElementById(id).hidden=on);
+  if(!on)render();}
+let qi=Math.floor(Math.random()*QUIZ.length),qn=1;
+function drawQuiz(){const Q=QUIZ[qi],box=document.getElementById("quizChoices");
+  document.getElementById("quizQ").innerHTML='<span class="qno">문제 '+qn+'</span>'+esc(Q.q);
+  const cs=Q.c.slice().sort(()=>Math.random()-.5);
+  box.innerHTML=cs.map((c,k)=>'<button type="button" data-c="'+esc(c)+'"><b>'+"①②③④"[k]+'</b>'+esc(c)+'</button>').join("");
+  box.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>pick(b.dataset.c)));}
+function pick(c){const Q=QUIZ[qi],msg=document.getElementById("gateMsg");
+  if(c===Q.a){state.unlocked=true;save();gate();return;}
+  msg.className="gatemsg no";
+  msg.innerHTML='아쉬워요. 다른 문제로 바꿨어요. 방금 문제의 정답은 <a href="'+Q.post.u+'" target="_blank" rel="noopener">'+esc(Q.post.t)+'</a>에 있어요.';
+  qi=(qi+1+Math.floor(Math.random()*(QUIZ.length-1)))%QUIZ.length;qn++;drawQuiz();}
+drawQuiz();
+gate();
+</script>
+</body>
+</html>
